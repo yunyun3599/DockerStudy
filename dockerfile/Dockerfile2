@@ -1,0 +1,5 @@
+FROM ubuntu
+ENV greeting=hello
+ARG name
+#ENTRYPOINT echo ${greeting} ${name}
+ENTRYPOINT ["sh", "-c", "echo ${greeting} ${name}"]
