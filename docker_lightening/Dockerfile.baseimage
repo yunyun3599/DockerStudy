@@ -1,0 +1,21 @@
+FROM node:16-alpine AS base
+LABEL maintainer="yoonjae"
+LABEL description="Dockerfile to practice [AS base] usage"
+
+WORKDIR /app
+
+COPY package*.json
+
+# build phase
+FROM base AS build
+RUN npm install
+
+# release phase
+FROM base AS release
+# --from=build를 통해 빌드 스테이지에서 파일을 복사해옴
+COPY --from=build /app/node_modules ./node_modules
+# app 소스코드 복사
+COPY . .
+
+EXPOSE 8080
+CMD ["node", "server.js"]
