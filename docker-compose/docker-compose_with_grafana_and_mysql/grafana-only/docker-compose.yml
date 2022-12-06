@@ -1,0 +1,21 @@
+version: '3.9'
+
+services:
+  grafana:
+    image: grafana/grafana:8.2.2
+    restart: unless-stopped   # always보다 강력한 옵션. 서버가 재시작되더라도 도커 컨테이너를 다시 띄움. (e.g. ec2머신이 재시작돼도 컨테이너가 뜸)
+    environment:
+      GF_INSTALL_PLUGINS: grafana-clock-panel
+    ports:
+    - 3000:3000
+    volumes:
+    - ./files/grafana.ini:/etc/grafana/grafana.ini:ro   # /etc/grafana/grafana.ini 는 기본 그라파나 설정 파일의 위치
+    - grafana-data:/var/lib/grafana     # /var/lib/grafana가 로컬 데이터 저장 장소 (현재는 기본 db인 SQLite file db로 해당 위치에 저장될 것임)
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "8m"
+        max-file: "10"
+
+volumes:
+  grafana-data: {}

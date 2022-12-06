@@ -12,4 +12,3 @@ docker compose down
 volume까지 제거하기 위해서는
 ```sh
 docker compose down -v
-```

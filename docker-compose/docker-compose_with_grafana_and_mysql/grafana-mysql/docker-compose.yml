@@ -1,0 +1,40 @@
+version: '3.9'
+
+services:
+  db:
+    image: mysql:latest
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: grafana
+      MYSQL_DATABASE: grafana
+      MYSQL_USER: grafana
+      MYSQL_PASSWORD: grafana
+    volumes:
+    - mysql-data:/var/lib/mysql
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "8m"
+        max-file: "10"
+  
+  grafana:
+    depends_on: 
+    - db
+    image: grafana/grafana:8.2.2
+    restart: unless-stopped
+    environment:
+      GF_INSTALL_PLUGINS: grafana-clock-panel
+    ports:
+    - 3000:3000
+    volumes:
+    - ./files/grafana.ini:/etc/grafana/grafana.ini:ro   # /etc/grafana/grafana.ini 는 기본 그라파나 설정 파일의 위치
+    - grafana-data:/var/lib/grafana     # /var/lib/grafana가 로컬 데이터 저장 장소 (현재는 기본 db인 SQLite file db로 해당 위치에 저장될 것임)
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "8m"
+        max-file: "10"
+
+volumes:
+  mysql-data: {}
+  grafana-data: {}
