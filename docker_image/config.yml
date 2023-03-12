@@ -1,0 +1,12 @@
+# config.yml
+
+version: 0.1
+log:
+  level: info     # 로그 출력 레벨 info로 설정
+storage:
+  filesystem:
+    rootdirectory: /registry_data   # 이미지 파일이 저장되는 디레터리 지정
+  delete:
+    enabled: true
+http:
+  addr: 0.0.0.0:5000    # 레지스트리 서비스를 바인딩할 주소

@@ -156,5 +156,148 @@ $ docker login
 $ docker logout
 ```
 
+**도커 허브 추가 사항**  
+- 조직 / 팀 생성 가능 (유료)
+- webhook 추가 가능
+  - 저장소에 이미지가 push 됐을 때 특정 URL로 http 요청을 전송하도록 설정하는 기능
 
 
+### 도커 사설 레지스트리  
+사설 레지스트리 사용 시 개인 서버에 이미지 저장 가능  
+사설 레지스트리를 제공해주는 도커 이미지를 pull 받아 컨테이너로 띄워서 사용 가능  
+
+```sh
+$ docker run -d --name myregistry \
+  -p 5000:5000 \
+  --restart=always \
+  registry:2.6
+```
+
+>참고) restart option 
+>- always: 컨테이너 정지 시마다 다시 시작 (도커 호스트나 엔진 다시 시작하면 컨테이너도 재시작됨)
+>- on-failure: on-failure:5로 설정 시에는 종료 코드가 0(정상 종료)이 아닐 시에는 재시작을 5번까지 시도
+>- unless-stopped: 컨테이너를 stop 명령어로 정지한 경우 도커 호스트나 엔진을 재시작해도 컨테이너가 시작되지 않음
+
+
+위 명령어로 컨테이너가 떴다면 레지스트리로 curl 요청을 보낼 수 있음
+```sh
+$ curl localhost:5000/v2
+```
+
+**사설 레지스트리에 이미지 Push 하기**
+```sh
+# 레지스트리 push를 위해 도커 이미지 이름 변경
+$ docker tag export_image:1.0 localhost:5000/export_image:1.0   # localhost
+$ docker tag export_image:1.0 192.168.xx.xxx:5000/export_image:1.0  # local ip 주소
+# push
+$ docker push localhost:5000/export_image:1.0 # push 성공
+$ docker push 192.168.xx.xxx:5000/export_image:1.0  # push 실패
+```
+위의 경우 두번째는 `Get "https://192.168.xx.xx:5000/v2/": http: server gave HTTP response to HTTPS client` 메세지와 함께 push 실패  
+그 이유는 도커 데몬은 https를 사용하지 않은 레지스트리 컨테이너에 접근하지 못하도록 설정되어 있기 때문임  
+따라서 docker desktop -> 우측 상단 설정 -> docker engine -> json 파일에 아래 내용 추가
+```json
+{
+  "builder": {
+    "gc": {
+      "defaultKeepStorage": "20GB",
+      "enabled": true
+    }
+  },
+  "experimental": false,
+  "features": {
+    "buildkit": true
+  },
+  "insecure-registries": ["192.168.xx.xx:5000"]
+}
+```
+
+**사설 레지스트리에 이미지 Pull 받기**
+```sh
+$ docker pull 192.168.xx.xx:5000/export_image:1.0
+```
+
+**사설 레지스트리에서 사용 가능한 API**
+1. 이미지 목록 확인하기
+  - ```sh
+    $ curl localhost:5000/v2/_catalog
+    ```
+  - ![](2023-03-12-00-08-07.png)
+2. 이미지 태그 리스트까지 확인하기
+  - ```sh
+    $ curl localhost:5000/v2/export_image/tags/list
+    ```
+  - ![](2023-03-12-00-10-18.png)
+3. 이미지 상세 정보 확인하기
+  - ```sh
+    $ curl localhost:5000/v2/export_image/manifests/1.0
+    ```  
+  - manifest = 레지스트리 컨테이너에 저장된 이미지 정보의 묶음
+  - 도커 이미지
+    1. 이미지 정보 저장 매니페스트
+    2. 실제 이미지에 레이어 파일을 저장하는 바이너리 파일
+4. 이미지 삭제하기
+  - 이미지를 삭제하려면 이미지 매니페스트 레이어와 레이어 파일을 따로 삭제해야함  
+  - 매니페스트 삭제 URL
+    > DELETE /v2/(이미지명)/manifests/(매니패스트 다이제스트)
+    ```sh
+    $ curl --header "Accept: application/vnd.docker.distribution.manifest.v2+json" \
+      -X DELETE -v \
+      192.168.xx.xx:5000/v2/[image_name]/manifests/sha256:a9d790c06e...
+    ```
+  - 레이어 파일 삭제 URL
+    > DELETE /v2/(이미지명)/blobs/(레이어 다이제스트)
+    ```sh
+    $ curl -X DELETE \
+      -i 192.168.xx.xx:5000/v2/[image_name]/blobs/sha:e9790d90c0abe0f9...
+    ```
+  - 이미지를 삭제하려면 사설 레지스트리리 컨테이너를 실행할 때 `REGISTRY_STORAGE_DELETE_ENABLED` 환경변수를 true로 설정해야함
+    ```sh
+    $ docker run -d --name registry_delete_enabled \
+      -p 5000:5000 \
+      --restart=always \
+      -e REGISTRY_STORAGE_DELETE_ENABLED=true \
+      registry:2.6
+    ```
+
+**사설 레지스트리 옵션**
+위에서 이미지 삭제를 위해 `REGISTRY_STORAGE_DELETE_ENABLED` 환경변수를 설정한 것처럼 여러 옵션을 설정하기 위해 추가적인 환경변수를 설정할 수 있음  
+환경변수를 통해 이미지 삭제, 스토리지 백엔드, 이미지 레이어 파일 저장 디렉터리, 웹훅 설정 등을 할 수 있음  
+```sh
+$ docker run -d -p 5000:5000 --name registry_delete_enabled \
+  --restart=always \
+  -e REGISTRY_STORAGE_DELETE_ENABLED=true \
+  -e REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY=/var/lib/mydocker \
+  ...
+  registry:2.6
+```
+
+환경변수로 일일히 설정하지 않고 yml 파일을 정의해 레지스트리 컨테이너의 환경변수를 설정할 수도 있음  
+yml 파일을 설정하지 않았을 때 기본 yml 파일은 아래와 같음  
+![](2023-03-12-20-17-22.png)
+
+직접 작성한 yml파일 적용
+```yml
+# config.yml
+
+version: 0.1
+log:
+  level: info     # 로그 출력 레벨 info로 설정
+storage:
+  filesystem:
+    rootdirectory: /registry_data   # 이미지 파일이 저장되는 디레터리 지정
+  delete:
+    enabled: true
+http:
+  addr: 0.0.0.0:5000    # 레지스트리 서비스를 바인딩할 주소
+```
+
+위 config파일을 적용한 container 실행
+```
+$ docker run -d -p 5001:5000 --name yml_registry \
+  --restart=always \
+  -v $(pwd)/config.yml:/etc/docker/registry/config.yml \
+  registry:2.6
+```
+
+![](2023-03-12-20-25-22.png)
