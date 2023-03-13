@@ -230,7 +230,8 @@ $ docker pull 192.168.xx.xx:5000/export_image:1.0
   - ![](2023-03-12-00-10-18.png)
 3. 이미지 상세 정보 확인하기
   - ```sh
-    $ curl localhost:5000/v2/export_image/manifests/1.0
+    $ curl -i --header "Accept: application/vnd.docker.distribution.manifest.v2+json" \
+    localhost:5000/v2/export_image/manifests/1.0
     ```  
   - manifest = 레지스트리 컨테이너에 저장된 이미지 정보의 묶음
   - 도커 이미지
