@@ -1,0 +1,8 @@
+FROM python as builder
+ADD main.py /root
+WORKDIR /root
+
+FROM alpine:latest
+WORKDIR /root
+COPY --from=builder /root/main.py .
+CMD ["python", "./main.py"]

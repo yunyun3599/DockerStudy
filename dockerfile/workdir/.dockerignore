@@ -1,0 +1,5 @@
+test2.html
+*.html
+*/*.html
+test.htm?
+!test*.html

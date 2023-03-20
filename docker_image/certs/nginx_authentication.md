@@ -31,7 +31,7 @@ $ docker run -d --name nginx_frontend \
 
 # 로그인 
 $ docker login https://${DOCKER_HOST_IP}
-# Error response from daemon: Get "https://192.168.35.96/v2/": dialing 192.168.35.96:443 no HTTPS proxy: connecting to 192.168.35.96:443: dial tcp 192.168.35.96:443: connect: connection refused
+# 인증서 에러
 
 # ca.crt 파일 신뢰할 수 있는 인증서 목록에 추가
 $ sudo security add-trusted-cert -d -r trustRoot -k "/Library/Keychains/System.keychain" "[경로/root인증서파일명]"

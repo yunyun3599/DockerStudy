@@ -1,0 +1,4 @@
+FROM python
+ADD main.py /root
+WORKDIR /root
+CMD ["python", "./main.py"]
