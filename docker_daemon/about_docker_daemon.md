@@ -191,3 +191,15 @@ $ dockerd --data-root /DATA/docker
 
 **PaaS**(Platform as a Service)에 적합한 드라이버로 평가됨  
 : 컨테이너의 실행, 삭제 등의 컨테이너 관련 수행 작업이 빠르기 때문  
+
+### Devicemapper
+레드햇 계열의 리눅스 배포판을 위해 개발된 스토리지 드라이버  
+성능상의 이유로 더 이상 사용하지 않는 것이 권장되는 deprecated 스토리지 드라이버임  
+
+devicemapper를 사용할 때 `/var/lib/docker/devicemapper/devicemapper` 경로를 보면 `data, metadata` 두가지 파일을 확인할 수 있음  
+- data: 크기가 100G인 sparse한 파일
+- 100G 전체를 다 사용하는 것은 아니고, 파일에서 빈 공간을 할당받아 이미지와 컨테이너레이어를 저장 
+- 이미지와 컨테이너가 분리된 디렉터리로 저장되는 것이 아니라 data 파일로 이루어진 pool에서 블록단위로 할당받음  
+- 컨테이너와 이미지 블록의 정보는 metadata 파일에 저장됨
+
+
