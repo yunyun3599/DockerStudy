@@ -88,3 +88,92 @@ $ docker version
 # 위의 설정은 아래 명령어와 동일하게 기능
 $ docker -H tcp://192.168.99.100:2375 version
 ```
+
+## 도커 데몬에 보안 적용
+도커 데몬에 보안을 적용해두지 않으면 Remote API를 위해 바인딩된 IP 주소와 포트 번호만 알면 도커를 제어할 수 있기 때문에 보안을 적용하는 것이 바람직함  
+도커 데몬에 보안을 적용하기 위해 필요한 파일은 `ca.pem, server-cert.pem, server-key.pem, cert.pem, key.pem`이 있음  
+
+도커 데몬을 보안을 적용해서 수행시키기 위한 명령어  
+```sh
+$ dockerd --tlsverify \
+  --tlscacert=/root/.docker/ca.pem \
+  --tlscert=/root/.docker/server-cert.pem \
+  --tlskey=/root/.docker/server-key.pem \
+  -H=0.0.0.0:2376 \
+  -H unix:///var/run/docker.sock
+```
+> 일반적으로 보안 미적용시 2375 포트를, 보안 적용 시 2376 포트를 사용
+
+클라이언트는 보안이 적용된 경우 아래와 같이 요청
+```sh
+$ docker -H 192.168.99.100:2376 \
+  --tlscacert=/root/.docker/ca.pem \
+  --tlscert=/root/.docker/cert.pem \
+  --tlskey=/root/.docker/key.pem \
+  --tlsverify version
+```
+
+명령어에 위와 같이 옵션을 주어도 되고, 인증 관련 환경변수를 설정해 두어도 됨  
+```sh
+$ export DOCKER_CERT_PATH="/root/.docker
+$ export DOCKER_TLS_VERIFY=1
+$ docker -H 192.168.99.100:2376 version
+```
+
+curl을 통해 Remote API로 보안 적용된 도커 데몬 사용 명령어
+```sh
+$ curl https://192.168.99.100:2376/version \
+  --cert ~/.docker/cert.pem \
+  --key ~/.docker/key.pem \
+  --cacert ~/.docke/ca.pem
+```
+
+## 도커 스토리지 변경: --storage-driver
+**스토리지 기본값**
+- 우분투(데비안 계열): overlay2  
+- 구 버전의 CentOS: deviceampper
+
+- 스토리지 설정 옵션: `--storage-driver`
+- 지원 드라이버: OverlayFS, AUFS, Btrfs, Devicemapper, VFS, ZFS
+
+적용된 스토리지 드라이버에 따라 컨테이너와 이미지가 별도로 생성됨  
+```
+도커가 AUFS를 기본적으로 사용하는데 devicemapper를 사용하도록 옵션을 주면 별도의 Devicemapper 컨테이너와 이미지를 사용  
+-> AUFS에서 사용하던 이미지와 컨테이너 사용 불가  
+
+별도로 생성된 Devicemapper파일은 /var/lib/docker/devicemapper 디렉터리에 저장되며, AUFS 드라이버 또한 /var/lib/docker/aufs 디렉터리에 저장됨
+```
+
+스토리지 지정 옵션을 포함한 명령어
+```sh
+$ dockerd --storage-driver=devicemapper
+```
+
+도커 데몬이 사용하는 컨테이너, 이미지가 저장되는 디렉터리를 별도로 지정하지 않으면 드라이버별로 사용되는 컨테이너와 이미지는 `/var/lib/docker/{드라이버명}`에 저장됨  
+경로를 임의로 저장하고 싶다면 `--data-root` 옵션 설정
+```sh
+$ dockerd --data-root /DATA/docker
+```
+
+### 스토리지 드라이버의 원리  
+실제로 컨테이너 내부에서 읽기, 새로운 파일 쓰기, 기존 파일 쓰기 작업이 일어날 때는 드라이버에 따라 `Copy-on-Write(CoW)` 또는 `Redirect-on-Write(Row)` 개념을 사용. 
+
+스냅숏: 원본 파일은 읽기 전용으로 사용하되 이 파일이 변경되면 새로운 공간을 할당한다  
+스토리지가 스냅숏으로 생성되면 스냅숏 안에 어느 파일이 어디에 저장돼 있는지가 목록으로 저장됨  
+이 스냅숏을 사용하다 스냅숏 안의 파일에 변화가 생기면 변경된 내역을 따로 관리함으로써 스냅숏을 사용
+
+**CoW**
+파일 쓰기 작업을 수행할 때 스냅숏 공간에 원본파일을 복사한 뒤 쓰기 요청을 반영  
+1. 복사하기 위한 파일 읽기
+2. 파일을 스냅숏 공간에 쓰고 변경된 사항을 쓰기  
+-> 총 2번의 오버헤드 발생
+
+**Row**
+한번의 쓰기 작업만 일어남  
+파일을 스냅숏 공간에 복사하는 것이 아니라 스냅숏에 기록된 원본 파일은 스냅숏 파일로 묶은 후 변경된 사항을 새로운 장소에 할당받아 덮어쓰는 형식  
+스냅숏 파일은 그대로 상ㅇ하되, 새로운 블록은 변경사항으로써 사용  
+
+**도커 컨테이너 & 이미지에 적용**
+이미지 레이어 = 스냅숏에 해당  
+컨테이너 = 스냅숏을 사용하는 변경점
+
