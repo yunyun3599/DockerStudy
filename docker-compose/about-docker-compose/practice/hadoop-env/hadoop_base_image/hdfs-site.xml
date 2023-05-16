@@ -1,0 +1,27 @@
+<configuration>
+        <property>
+                <name>dfs.replication</name>
+                <value>3</value>
+                <final>true</final>
+        </property>
+
+        <property>
+                <name>dfs.namenode.name.dir</name>
+                <value>/hadoop_home/namenode_dir</value>
+                <final>true</final>
+        </property>
+
+        <property>
+                <name>dfs.datanode.data.dir</name>
+                <value>/hadoop_home/datanode_dir</value>
+                <final>true</final>
+        </property>
+        <property>
+                <name>dfs.http.address</name>
+                <value>namenode:50070</value>
+        </property>
+        <property>
+                <name>dfs.secondary.http.address</name>
+                <value>secondarynode:50090</value>
+        </property>
+</configuration>

@@ -1,0 +1,69 @@
+version: '3.4'
+
+services:
+  namenode:
+    image: yoonjae/namenode:hadoop
+    container_name: namenode
+    build: 
+      context: ./namenode
+    hostname: namenode
+    ports:
+      - "50070:50070"
+    extra_hosts:
+      - "secondarynode: 172.28.0.3"
+      - "datanode01: 172.28.0.4"
+      - "datanode02: 172.28.0.5"
+    tty: true
+    depends_on:
+      - secondarynode
+      - datanode01
+      - datanode02
+    entrypoint: /start.sh
+    networks:
+      hadoop-network:
+        ipv4_address: 172.28.0.2
+
+  secondarynode:
+    image: yoonjae/hadoop:base
+    container_name: secondarynode
+    build: 
+      context: ./datanode
+    hostname: secondarynode
+    tty: true
+    entrypoint: ["/bin/bash", "/entrypoint.sh"]
+    networks:
+      hadoop-network:
+        ipv4_address: 172.28.0.3
+  
+  datanode01:
+    image: yoonjae/hadoop:base
+    container_name: datanode01
+    build: 
+      context: ./datanode
+    hostname: datanode01
+    tty: true
+    entrypoint: ["/bin/bash", "/entrypoint.sh"]
+    networks:
+      hadoop-network:
+        ipv4_address: 172.28.0.4
+  
+  datanode02:
+    image: yoonjae/hadoop:base
+    container_name: datanode02
+    build: 
+      context: ./datanode
+    hostname: datanode02
+    tty: true
+    entrypoint: ["/bin/bash", "/entrypoint.sh"]
+    networks:
+      hadoop-network:
+        ipv4_address: 172.28.0.5
+  
+
+networks:
+  hadoop-network:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.28.0.0/16
