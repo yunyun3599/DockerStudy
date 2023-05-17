@@ -245,7 +245,7 @@ services:
             IPAddress: "10.0.0.2"
       ```
 2. ipam
-    - IPAM(IP Address Manager)을 위해 사용할 수 있는 옵션을오 subnet, ip 범위 등을 설정할 수 있음  
+    - IPAM(IP Address Manager)을 위해 사용할 수 있는 옵션으로 subnet, ip 범위 등을 설정할 수 있음  
     - driver 항목에는 IPAM을 지원하는 드라이버의 이름을 입력  
     ```yaml
     services:
