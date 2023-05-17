@@ -81,19 +81,19 @@ services:
     ```
 3. environment
     - docker run 명령어의 `--env`, `-e` 옵션과 동일 
-    - 컨테이너 내부에서 사용할 환견변수를 지정하며, Dictionary나 배열 형태로 사용 가능
+    - 컨테이너 내부에서 사용할 환경변수를 지정하며, Dictionary나 배열 형태로 사용 가능
     ```yaml
     services:
       web:
         environment:
-          - MYSQL_ROOT__PASSWORD=mypassword
+          - MYSQL_ROOT_PASSWORD=mypassword
           - MYSQL_DATABASE_NAME=mydb
     ```
     ```yaml
     services:
       web:
         environment:
-          MYSQL_ROOT__PASSWORD: mypassword
+          MYSQL_ROOT_PASSWORD: mypassword
           MYSQL_DATABASE_NAME: mydb
     ```
 3. command
@@ -124,7 +124,7 @@ services:
         image: alicek106/composetest:mysql
     ```
     - 위 yaml파일을 실행하면 web은 mysql이 생성된 후에 생성되며 mysql 이라는 서비스명으로 mysql 도커 컨테이너에 접근 가능
-    > 특정 서비스의 컨테이너만 생성하되 의존성이 이벗는 컨테이너를생성하려면 --no-deps 옵션 사용
+    > 특정 서비스의 컨테이너만 생성하되 의존성이 없는 컨테이너를생성하려면 --no-deps 옵션 사용
     >```sh 
     >$ docker-compose up --no-deps web
     >```
