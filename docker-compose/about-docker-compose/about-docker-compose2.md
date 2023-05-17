@@ -219,10 +219,10 @@ services:
       web:
         extends:
           services: extend-web
-        extend_web:
-          image: ubuntu:14.04
-          ports:
-            - "80:80"
+      extend_web:
+        image: ubuntu:14.04
+        ports:
+          - "80:80"
     ```
   - 그러나 `depends_on`과 `links`, `volume_from` 항목은 각 컨테이너 사이의 의존성을 내포하고 있으므로 extends로 상속받을 수 없음  
 
